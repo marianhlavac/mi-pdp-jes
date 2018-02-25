@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# Yes, I do hate Makefile. And CMakefile is overkill for this project.
+
+echo "Compiling..."
+gcc src/main.cpp -lstdc++ -shared-libgcc -std=c++11 -g -o bin/pdpjes
+
+echo "Done."
+
+if [ "$1" == "--run" ]; then
+    ./bin/pdpjes
+fi
