@@ -6,11 +6,10 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bin/pdpjes",
-            "args": [],
-            "stopAtEntry": false,
+            "args":[
+                "test/fixtures/kun01.txt"
+            ],
             "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false,
             "MIMode": "lldb"
         }
     ]
