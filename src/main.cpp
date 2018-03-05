@@ -7,6 +7,9 @@
 #include <stack>
 
 #define BUFFER_MAX  256
+#ifndef SHRT_MAX 
+#define SHRT_MAX 32767 
+#endif
 
 const short KNIGHT_MOVES = 8;
 const short KNIGHT_MOVES_COORDS[8][2] = { 
@@ -26,6 +29,10 @@ class Game {
         Game() { }
         Game(short* board) : grid(board) { }
 
+        ~Game() {
+            free(grid);
+        }
+
         bool is_piece_at(short coords) {
             return grid[coords] == 1;
         }
@@ -42,37 +49,42 @@ class Game {
             Game game;
             std::ifstream file;
             file.open(filename);
-            short pieces = 0;
 
             if (file.fail()) {
                 throw std::runtime_error("File doesn't exist.");
             }
 
             char * line = (char*) malloc(sizeof(char) * BUFFER_MAX);
+            short pieces = 0;
 
             // Read first line
             file >> game.dimension;
             file >> game.upper_bound;
             file.getline(line, BUFFER_MAX);
 
-            game.grid = (short*) malloc(sizeof(short) * game.dimension);
+            // Allocate memory for the grid
+            int items_count = game.dimension * game.dimension;
+            game.grid = (short*) malloc(sizeof(short) * items_count);
 
-            // Read the rest
+            // Read the grid
             int line_num = 0;
             while (file.getline(line, BUFFER_MAX)) {
                 for (int i = 0; i <= game.dimension; ++i) {
                     int idx = i + (game.dimension * line_num);
                     game.grid[idx] = line[i] - '0';
-                    if (line[i] == '1') { pieces++; }
-                    if (line[i] == '3') { 
-                        game.start_coord = i + line_num * game.dimension; 
+
+                    switch (game.grid[idx]) {
+                        case 1: pieces++; break;
+                        case 3: 
+                            game.start_coord = i + line_num * game.dimension;
+                        break;
                     }
                 }
                 line_num++;
             }
 
             game.pieces = pieces;
-
+            free(line);
             return game;
         }
 };
@@ -88,8 +100,8 @@ struct Solution {
     /**
      * Gets the price of this solution.
      */
-    size_t get_price() const {
-        return valid ? path.size() : 32767;
+    size_t get_size() const {
+        return valid ? path.size() : SHRT_MAX;
     }
 
     /**
@@ -103,12 +115,13 @@ struct Solution {
      * Dumps the contents of the struct for debugging purposes.
      */
     std::string dump() {
+        if (!valid) return "Solution {\n  Invalid\n}";
         std::stringstream ss;
         ss << "Solution {" << std::endl << "  path: ";
         for (short node : path) {
             ss << node << ", ";
         }
-        ss << std::endl << "  pieces_left: " << pieces_left << std::endl;
+        ss << std::endl << "  pieces_left: " << pieces_left << "," << std::endl;
         ss << "}" << std::endl;
         return ss.str();
     }
@@ -173,10 +186,10 @@ class Solver {
             while (!stk.empty()) {
                 Solution node = stk.top();
                 stk.pop();
-                
 
                 // Check if not off limits or useless (pruning)
-                if (/* off_limits || useless */node.get_price() >= 11) {
+                if (node.get_size() + (game->pieces - node.pieces_left) >= best_solution.get_size() || 
+                    node.get_size() >= game->upper_bound) {
                     continue;
                 }
 
@@ -184,7 +197,7 @@ class Solver {
                 for (Solution next : all_available_steps(node)) {
                     if (next.pieces_left == 0) {
                         // Found solution, compare to others
-                        if (next.get_price() < best_solution.get_price()) {
+                        if (next.get_size() - best_solution.get_size()) {
                             best_solution = next;
                         }
                     } else {
@@ -218,6 +231,9 @@ int main(int argc, char** argv) {
     // catch (std::runtime_error err) {
     //     std::cerr << err.what();
     // }
+
+    // Clean up
+
     
     return 0;
 }

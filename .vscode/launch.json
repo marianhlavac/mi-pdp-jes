@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "LLDB",
+            "name": "Apple LLDB",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bin/pdpjes",
@@ -11,6 +11,17 @@
             ],
             "cwd": "${workspaceFolder}",
             "MIMode": "lldb"
+        },
+        {
+            "name": "Brew LLDB",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/pdpjes",
+            "args":[
+                "test/fixtures/kun01.txt"
+            ],
+            "cwd": "${workspaceFolder}",
+            "miDebuggerPath": "/usr/bin/gdb"
         }
     ]
 }
