@@ -94,7 +94,9 @@ struct Solution {
     short pieces_left;
     bool valid = false;
 
-    Solution(short pieces) : pieces_left(pieces), valid(true) { }
+    Solution(short pieces, short upper_bound) : pieces_left(pieces), valid(true) {
+        path.reserve(upper_bound);
+    }
     Solution() : valid(false) { }
 
     /**
@@ -135,10 +137,10 @@ class Solver {
          * Returns all available steps for a knight on the grid, 
          * relative to current solution.
          */
-        std::vector<Solution> all_available_steps(const Solution &current) {
-            std::vector<Solution> steps;
+        void get_available_steps(Solution* current, std::vector<Solution*> &steps) {
             short dim = game->dimension;
-            short last = current.get_last();
+            short last = current->get_last();
+            steps.clear();
 
             for (int i = 0; i < KNIGHT_MOVES; ++i) {
                 const short* move = KNIGHT_MOVES_COORDS[i];
@@ -150,21 +152,24 @@ class Solver {
                     continue;
                 }
 
-                Solution next = current;
+                Solution* next = new Solution(*current);
                 short coords = last + move[0] + dim * move[1];
-                next.path.push_back(coords);
+                next->path.push_back(coords);
 
                 // Check if stepped on a piece
                 if (game->is_piece_at(coords)) {
-                    if (find(current.path.begin(), current.path.end(), coords) == current.path.end()) {
-                        next.pieces_left--;
+                    if (find(current->path.begin(), current->path.end(), coords) == current->path.end()) {
+                        next->pieces_left--;
                     }
                 }
 
+                // Apply slight heuristic operator
+                // sort(steps.begin(), steps.end(), [](const Solution * a, const Solution * b) -> bool { 
+                //     return a->get_size() < b->get_size(); 
+                // });
+
                 steps.push_back(next);
             }
-
-            return steps;
         }
 
     public:
@@ -176,38 +181,45 @@ class Solver {
          * @returns Best found solution.
          */
         Solution solve() {
-            std::stack<Solution> stk;
-            Solution best_solution;
+            std::deque<Solution*> stack;
+            std::vector<Solution*> steps;
+            Solution* best_solution = new Solution();
 
-            Solution root(game->pieces);
-            root.path.push_back(game->start_coord);
-            stk.push(root);
+            Solution* root = new Solution(game->pieces, game->upper_bound);
+            root->path.push_back(game->start_coord);
+            stack.push_back(root);
 
-            while (!stk.empty()) {
-                Solution node = stk.top();
-                stk.pop();
+            while (!stack.empty()) {
+                Solution* node = stack.back();
+                stack.pop_back();
 
                 // Check if not off limits or useless (pruning)
-                if (node.get_size() + (game->pieces - node.pieces_left) >= best_solution.get_size() || 
-                    node.get_size() >= game->upper_bound) {
+                if (node->get_size() + (game->pieces - node->pieces_left) >= best_solution->get_size() || 
+                    node->get_size() >= game->upper_bound) {
                     continue;
                 }
 
                 // Find each available next step
-                for (Solution next : all_available_steps(node)) {
-                    if (next.pieces_left == 0) {
+                get_available_steps(node, steps);
+                for (Solution* next : steps) {
+                    if (next->pieces_left == 0) {
                         // Found solution, compare to others
-                        if (next.get_size() - best_solution.get_size()) {
+                        if (next->get_size() - best_solution->get_size()) {
                             best_solution = next;
                         }
+
+                        // 
                     } else {
                         // Push to stack to be explored further
-                        stk.push(next);
+                        stack.push_back(next);
                     }
                 }
             }
 
-            return best_solution;
+            for (Solution* sol : stack) { delete sol; }
+            stack.clear();
+
+            return *best_solution;
         }
 };
 
