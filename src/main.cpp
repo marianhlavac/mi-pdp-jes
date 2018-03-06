@@ -13,7 +13,7 @@
 
 const short KNIGHT_MOVES = 8;
 const short KNIGHT_MOVES_COORDS[8][2] = { 
-    {-2,-1}, {-2,1}, {-1,-2}, {-1,2}, {1,-2}, {1,2}, {2,-1}, {2,1}
+    {-1,-2}, {1,-2}, {-2,-1}, {2,-1}, {-1,2}, {1,2}, {-2,1}, {2,1}
 };
 
 class Game {
@@ -58,8 +58,7 @@ class Game {
             short pieces = 0;
 
             // Read first line
-            file >> game.dimension;
-            file >> game.upper_bound;
+            file >> game.dimension >> game.upper_bound;
             file.getline(line, BUFFER_MAX);
 
             // Allocate memory for the grid
@@ -87,23 +86,41 @@ class Game {
             free(line);
             return game;
         }
+
+        std::pair<short, short> to_coords(short pos) {
+            return std::make_pair(pos % dimension, pos / dimension);
+        }
+
+        std::string dump_coords(short pos) {
+            std::stringstream ss;
+            ss << "" << pos / dimension << ":" << pos % dimension << "";
+            return ss.str();
+        }
 };
 
 struct Solution {
     std::vector<short> path;
     short pieces_left;
+    short upper_bound = SHRT_MAX;
     bool valid = false;
 
-    Solution(short pieces, short upper_bound) : pieces_left(pieces), valid(true) {
-        path.reserve(upper_bound);
+    Solution(short pieces, short upper_bound) : 
+        pieces_left(pieces), valid(true), upper_bound(upper_bound) { }
+
+    Solution(short upper_bound) : valid(false), upper_bound(upper_bound) { }
+
+    Solution(const Solution* s) {
+        path = s->path;
+        pieces_left = s->pieces_left;
+        valid = s->valid;
+        upper_bound = s->upper_bound;
     }
-    Solution() : valid(false) { }
 
     /**
      * Gets the price of this solution.
      */
     size_t get_size() const {
-        return valid ? path.size() : SHRT_MAX;
+        return valid ? path.size() : upper_bound;
     }
 
     /**
@@ -152,7 +169,7 @@ class Solver {
                     continue;
                 }
 
-                Solution* next = new Solution(*current);
+                Solution* next = new Solution(current);
                 short coords = last + move[0] + dim * move[1];
                 next->path.push_back(coords);
 
@@ -162,11 +179,6 @@ class Solver {
                         next->pieces_left--;
                     }
                 }
-
-                // Apply slight heuristic operator
-                // sort(steps.begin(), steps.end(), [](const Solution * a, const Solution * b) -> bool { 
-                //     return a->get_size() < b->get_size(); 
-                // });
 
                 steps.push_back(next);
             }
@@ -183,19 +195,22 @@ class Solver {
         Solution solve() {
             std::deque<Solution*> stack;
             std::vector<Solution*> steps;
-            Solution* best_solution = new Solution();
+            Solution* best_solution = new Solution(game->upper_bound + 1);
 
             Solution* root = new Solution(game->pieces, game->upper_bound);
             root->path.push_back(game->start_coord);
             stack.push_back(root);
 
+            long count = 0;
+
             while (!stack.empty()) {
+                count++;
                 Solution* node = stack.back();
                 stack.pop_back();
-
+                
+	            // ---- FIXME:
                 // Check if not off limits or useless (pruning)
-                if (node->get_size() + (game->pieces - node->pieces_left) >= best_solution->get_size() || 
-                    node->get_size() >= game->upper_bound) {
+                if (node->get_size() + node->pieces_left >= best_solution->get_size()) {
                     continue;
                 }
 
@@ -204,17 +219,18 @@ class Solver {
                 for (Solution* next : steps) {
                     if (next->pieces_left == 0) {
                         // Found solution, compare to others
-                        if (next->get_size() - best_solution->get_size()) {
+                        if (next->get_size() < best_solution->get_size()) {
                             best_solution = next;
                         }
-
-                        // 
                     } else {
                         // Push to stack to be explored further
                         stack.push_back(next);
                     }
                 }
+                // ---- FIXME:
             }
+
+            std::cout << "Iterations: " << count << std::endl;
 
             for (Solution* sol : stack) { delete sol; }
             stack.clear();
