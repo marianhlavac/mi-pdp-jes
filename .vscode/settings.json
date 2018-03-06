@@ -17,6 +17,8 @@
         "exception": "cpp",
         "initializer_list": "cpp",
         "new": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "iostream": "cpp",
+        "queue": "cpp"
     }
 }
