@@ -5,12 +5,15 @@
 #include <chrono>
 #include <vector>
 #include <stack>
+#include <chrono>
 
 #define BUFFER_MAX      256
 #ifndef SHRT_MAX 
 #define SHRT_MAX        32767 
 #endif
 #define P_DELIM         ","
+
+typedef std::chrono::high_resolution_clock hr_clock;
 
 const short KNIGHT_MOVES = 8;
 const short KNIGHT_MOVES_COORDS[8][2] = { 
@@ -253,7 +256,7 @@ int main(int argc, char** argv) {
     }
 
     // Print CSV header
-    std::cout << "filename,validity,upper_bound,solution_length,solution,iterations" << std::endl;
+    std::cout << "filename,validity,upper_bound,solution_length,solution,iterations,elapsed" << std::endl;
 
     // Execute and print out results
     try {
@@ -261,10 +264,12 @@ int main(int argc, char** argv) {
             Game game = Game::create_from_file(argv[i]);
             Solver solver(&game);
 
+            auto started_at = hr_clock::now();
             Solution solution = solver.solve();
+            std::chrono::duration<double> elapsed = hr_clock::now() - started_at;
 
             std::cout << argv[i] << P_DELIM << solution.dump() << P_DELIM <<
-                solver.iterations << std::endl;
+                solver.iterations << P_DELIM << elapsed.count() << std::endl;
         }
     } 
     catch (std::runtime_error err) {
