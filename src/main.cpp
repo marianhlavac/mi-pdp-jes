@@ -98,7 +98,7 @@ class Game {
         std::string to_coords_str(short pos) {
             std::pair<short, short> coords = to_coords(pos);
             return "(" + std::to_string(coords.first) + 
-                "," + std::to_string(coords.second) + ")";
+                ":" + std::to_string(coords.second) + ")";
         }
 };
 
