@@ -1,8 +1,18 @@
+CC=/usr/local/opt/llvm/bin/clang
+LDFLAGS=-L/usr/local/opt/llvm/lib -lstdc++ -shared-libgcc
+CPPFLAGS=-I/usr/local/opt/llvm/include -std=c++11
+
+SRC=src/main.cpp
+TARGET=bin/pdpjes
+
 pdpjes:
-	gcc src/main.cpp -lstdc++ -shared-libgcc -std=c++11 -O3 -o bin/pdpjes
+	$(CC) $(SRC) $(CPPFLAGS) -fopenmp -O3 -o $(TARGET) $(LDFLAGS)
 
 dev:
-	gcc src/main.cpp -lstdc++ -shared-libgcc -std=c++11 -g -O0 -o bin/pdpjes
+	$(CC) $(SRC) $(CPPFLAGS) -fopenmp -O0 -g -o $(TARGET) $(LDFLAGS)
+
+noomp:
+	$(CC) $(SRC) $(CPPFLAGS) $(LDFLAGS) -O0 -g -o $(TARGET)
 
 run: pdpjes
 	./bin/pdpjes $(FILE)
