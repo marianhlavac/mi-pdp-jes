@@ -19,6 +19,8 @@
         "new": "cpp",
         "typeinfo": "cpp",
         "iostream": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "bitset": "cpp",
+        "utility": "cpp"
     }
 }

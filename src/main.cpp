@@ -8,9 +8,7 @@
 #include <chrono>
 
 #define BUFFER_MAX      256
-#ifndef SHRT_MAX 
 #define SHRT_MAX        32767 
-#endif
 #define P_DELIM         ","
 
 typedef std::chrono::high_resolution_clock hr_clock;
@@ -21,24 +19,18 @@ const short KNIGHT_MOVES_COORDS[8][2] = {
 };
 
 class Game {
-    protected:
-        short* grid;
-
     public:
+        bool* grid;
         unsigned short dimension = 0;
         short upper_bound = 0;
         short pieces = 0;
         short start_coord = 0;
 
         Game() { }
-        Game(short* board) : grid(board) { }
+        Game(bool* board) : grid(board) { }
 
         ~Game() {
             free(grid);
-        }
-
-        bool is_piece_at(short coords) {
-            return grid[coords] == 1;
         }
         
         /**
@@ -67,21 +59,15 @@ class Game {
 
             // Allocate memory for the grid
             int items_count = game.dimension * game.dimension;
-            game.grid = (short*) malloc(sizeof(short) * items_count);
+            game.grid = (bool*) malloc(sizeof(bool) * items_count);
 
             // Read the grid
             int line_num = 0;
             while (file.getline(line, BUFFER_MAX)) {
                 for (int i = 0; i <= game.dimension; ++i) {
                     int idx = i + (game.dimension * line_num);
-                    game.grid[idx] = line[i] - '0';
-
-                    switch (game.grid[idx]) {
-                        case 1: pieces++; break;
-                        case 3: 
-                            game.start_coord = i + line_num * game.dimension;
-                        break;
-                    }
+                    if (line[i] == '1') { pieces++; game.grid[idx] = 1; }
+                    if (line[i] == '3') { game.start_coord = idx; }
                 }
                 line_num++;
             }
@@ -90,6 +76,12 @@ class Game {
             free(line);
             return game;
         }
+};
+
+class Solution {
+    protected:
+        std::vector<short> path;
+        bool* grid = nullptr;
 
         std::pair<short, short> to_coords(short pos) {
             return std::make_pair(pos % dimension, pos / dimension);
@@ -100,28 +92,40 @@ class Game {
             return "(" + std::to_string(coords.first) + 
                 ":" + std::to_string(coords.second) + ")";
         }
-};
-
-class Solution {
-    protected:
-        std::vector<short> path;
-        Game* game = nullptr;
 
     public:
         short upper_bound = SHRT_MAX;
+        short dimension;
+        short pieces_left = 0;
         bool valid = false;
-        short pieces_left;
 
+        /**
+         * Converts Game to a Solution, which can be used
+         * as a starting node in solving process.
+         */
         Solution(Game* game) : 
-            pieces_left(game->pieces), valid(true), 
-            upper_bound(game->upper_bound), game(game) { }
+            valid(true), dimension(game->dimension),
+            upper_bound(game->upper_bound), pieces_left(game->pieces) {
+            copy_grid(game->grid, game->dimension * game->dimension);
+        }
 
         Solution(short upper_bound) : 
             upper_bound(upper_bound) { }
 
         Solution(const Solution* s) : 
-            path(s->path), pieces_left(s->pieces_left), valid(s->valid), 
-            upper_bound(s->upper_bound), game(s->game) { }
+            path(s->path), valid(s->valid), pieces_left(s->pieces_left),
+            dimension(s->dimension), upper_bound(s->upper_bound) { 
+            copy_grid(s->grid, s->dimension * s->dimension);
+        }
+
+        ~Solution() {
+            free(grid);
+        }
+
+        void copy_grid(bool* source, size_t size) {
+            grid = (bool*) malloc(sizeof(bool) * size);
+            std::memcpy(source, grid, sizeof(bool) * size);
+        }
 
         /**
          * Gets the price of this solution.
@@ -144,16 +148,22 @@ class Solution {
             path.push_back(node);
         }
 
-        bool is_in_path(short node) {
-            return std::find(path.begin(), path.end(), node) != path.end();
+        bool is_piece_at(short coords) {
+            return grid[coords];
+        }
+
+        void remove_piece_at(short coords) {
+            if (grid[coords]) { pieces_left--; }
+            grid[coords] = 0;
         }
 
         std::string dump() {
-            std::string dump = std::string(valid ? "valid" : "invalid") + P_DELIM + std::to_string(upper_bound) +
+            std::string dump = std::string(valid ? "valid" : "invalid") + 
+                P_DELIM + std::to_string(upper_bound) +
                 P_DELIM + std::to_string(get_size()) + P_DELIM;
 
             for (short coord : path) {
-                dump += game->to_coords_str(coord) + ";";
+                dump += to_coords_str(coord) + ";";
             }
 
             return dump;
@@ -164,19 +174,43 @@ class Solver {
     protected:
         Game* game;
 
+        std::vector<Solution*> process_node(Solution* current, Solution* &best) {
+            std::vector<Solution*> explore;
+
+            // Prune
+            if (current->get_size() + current->pieces_left >= best->get_size()) {
+                return explore;
+            }
+
+            // Find each available next step
+            std::vector<Solution*> available = get_available_steps(current);
+            for (Solution* next : available) {
+                if (next->pieces_left == 0) {
+                    // Found solution, compare to others
+                    if (next->get_size() < best->get_size()) {
+                        best = next;
+                    }
+                } else {
+                    explore.push_back(next);
+                }
+            }
+
+            return explore;
+        }
+
         /**
          * Returns all available steps for a knight on the grid, 
          * relative to current solution.
          */
-        void get_available_steps(Solution* current, std::vector<Solution*> &steps) {
+        std::vector<Solution*> get_available_steps(Solution* current) const {
+            std::vector<Solution*> steps;
             short dim = game->dimension;
             short last = current->get_last();
-            steps.clear();
 
             for (int i = 0; i < KNIGHT_MOVES; ++i) {
                 const short* move = KNIGHT_MOVES_COORDS[i];
 
-                // Check if it doesn't overflows the gird
+                // Check if it doesn't overflows the grid
                 short xpos = last % dim + move[0];
                 short ypos = last / dim + move[1];
                 if (xpos < 0 || xpos >= dim || ypos < 0 || ypos >= dim) {
@@ -186,16 +220,11 @@ class Solver {
                 Solution* next = new Solution(current);
                 short coords = last + move[0] + dim * move[1];
                 next->add_node(coords);
-
-                // Check if stepped on a piece
-                if (game->is_piece_at(coords)) {
-                    if (!current->is_in_path(coords)) {
-                        next->pieces_left--;
-                    }
-                }
-
+                next->remove_piece_at(coords);
                 steps.push_back(next);
             }
+
+            return steps;
         }
 
     public:
@@ -209,7 +238,6 @@ class Solver {
          */
         Solution solve() {
             std::deque<Solution*> stack;
-            std::vector<Solution*> steps;
             Solution* best_solution = new Solution(game->upper_bound + 1);
 
             Solution* root = new Solution(game);
@@ -217,28 +245,12 @@ class Solver {
             stack.push_back(root);
 
             while (!stack.empty()) {
-                iterations++;
-                Solution* node = stack.back();
+                Solution* current = stack.back();
                 stack.pop_back();
 
-                // Prune
-                if (node->get_size() + node->pieces_left >= best_solution->get_size()) {
-                    continue;
-                }
-
-                // Find each available next step
-                get_available_steps(node, steps);
-                for (Solution* next : steps) {
-                    if (next->pieces_left == 0) {
-                        // Found solution, compare to others
-                        if (next->get_size() < best_solution->get_size()) {
-                            best_solution = next;
-                        }
-                    } else {
-                        // Push to stack to be explored further
-                        stack.push_back(next);
-                    }
-                }
+                for (Solution* next : process_node(current, best_solution)) {
+                    stack.push_back(next);
+                }  
             }
 
             for (Solution* sol : stack) { delete sol; }
