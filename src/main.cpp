@@ -124,7 +124,9 @@ class Solution {
 
         void copy_grid(bool* source, size_t size) {
             grid = (bool*) malloc(sizeof(bool) * size);
-            std::memcpy(source, grid, sizeof(bool) * size);
+            for (int i = 0; i < size; i++) {
+                grid[i] = source[i];
+            }
         }
 
         /**
