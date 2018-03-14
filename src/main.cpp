@@ -7,6 +7,7 @@
 #include <stack>
 #include <chrono>
 #include <algorithm>
+#include <omp.h>
 
 #define BUFFER_MAX              256
 #define SHRT_MAX                32767 
@@ -196,6 +197,7 @@ class Solver {
 
         void process_all(Solution* current, Solution* &best) {
             iterations++;
+            //std::cout << "Processing at thread " << omp_get_thread_num() << ": " << current->dump() << std::endl;
 
             // Prune
             if (current->get_size() + current->pieces_left >= best->get_size()) {
@@ -208,9 +210,12 @@ class Solver {
                     // Found solution, compare to others
                     if (next->get_size() < best->get_size()) {
                         best = next;
+                    #pragma omp critical
                     }
                 } else {
+                    #pragma omp task
                     process_all(next, best);
+                    #pragma omp taskwait
                 }
             }
         }
@@ -259,10 +264,14 @@ class Solver {
 
             root->add_node(game->start_coord);
 
-            process_all(root, best_solution);
-            if (SOLUTION_VALIDATE) { best_solution->validate(game); }
+            #pragma omp parallel shared(best_solution) 
+                #pragma omp single
+                process_all(root, best_solution);
+            
 
-            return *best_solution;
+            if (SOLUTION_VALIDATE) { (*best_solution)->validate(game); }
+
+            return **best_solution;
         }
 };
 
@@ -272,6 +281,14 @@ int main(int argc, char** argv) {
         std::cerr << "usage: " << argv[0] << " [filename]" << std::endl;
         return 64;
     }
+
+    // Print out OpenMP stats
+    #ifdef _OPENMP
+    std::cerr << "-!- OpenMP ready. "  <<
+        omp_get_num_procs() << " CPUs available, " << 
+        omp_get_max_threads() << " threads available on " << 
+        omp_get_num_devices() << " available devices." << std::endl;
+    #endif
 
     // Print CSV header
     std::cout << "filename,validity,upper_bound,solution_length,solution,iterations,elapsed" << std::endl;
