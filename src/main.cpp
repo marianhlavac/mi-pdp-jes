@@ -27,9 +27,6 @@ class Game {
         short pieces = 0;
         short start_coord = 0;
 
-        Game() { }
-        Game(bool* board) : grid(board) { }
-
         ~Game() {
             free(grid);
         }
@@ -51,7 +48,7 @@ class Game {
                 throw std::runtime_error("File doesn't exist.");
             }
 
-            char * line = (char*) malloc(sizeof(char) * BUFFER_MAX);
+            char* line = new char[BUFFER_MAX];
             short pieces = 0;
 
             // Read first line
@@ -60,7 +57,7 @@ class Game {
 
             // Allocate memory for the grid
             int items_count = game.dimension * game.dimension;
-            game.grid = (bool*) malloc(sizeof(bool) * items_count);
+            game.grid = new bool[items_count]();
 
             // Read the grid
             int line_num = 0;
@@ -98,7 +95,7 @@ class Solution {
         short upper_bound = SHRT_MAX;
         short dimension;
         short pieces_left = 0;
-        bool valid = false;
+        bool valid;
 
         /**
          * Converts Game to a Solution, which can be used
@@ -111,7 +108,7 @@ class Solution {
         }
 
         Solution(short upper_bound) : 
-            upper_bound(upper_bound) { }
+            upper_bound(upper_bound), valid(false) { }
 
         Solution(const Solution* s) : 
             path(s->path), valid(s->valid), pieces_left(s->pieces_left),
@@ -119,12 +116,16 @@ class Solution {
             copy_grid(s->grid, s->dimension * s->dimension);
         }
 
+        Solution() {
+            throw std::runtime_error("no.");
+        }
+
         ~Solution() {
             free(grid);
         }
 
         void copy_grid(bool* source, size_t size) {
-            grid = (bool*) malloc(sizeof(bool) * size);
+            grid = new bool[size];
             std::copy(source, source + size, grid);
         }
 
@@ -249,6 +250,9 @@ class Solver {
                 iterations++;
                 Solution* current = stack.back();
                 stack.pop_back();
+
+                //std::cerr << "Best solution is now: " << best_solution->dump() << std::endl <<
+                 //   "Picked up from stack: " << current->dump() << std::endl;
 
                 for (Solution* next : process_node(current, best_solution)) {
                     stack.push_back(next);
