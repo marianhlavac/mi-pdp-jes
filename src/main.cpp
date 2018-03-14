@@ -6,6 +6,7 @@
 #include <vector>
 #include <stack>
 #include <chrono>
+#include <algorithm>
 
 #define BUFFER_MAX      256
 #define SHRT_MAX        32767 
@@ -124,9 +125,7 @@ class Solution {
 
         void copy_grid(bool* source, size_t size) {
             grid = (bool*) malloc(sizeof(bool) * size);
-            for (int i = 0; i < size; i++) {
-                grid[i] = source[i];
-            }
+            std::copy(source, source + size, grid);
         }
 
         /**
@@ -247,6 +246,7 @@ class Solver {
             stack.push_back(root);
 
             while (!stack.empty()) {
+                iterations++;
                 Solution* current = stack.back();
                 stack.pop_back();
 
