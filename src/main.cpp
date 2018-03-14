@@ -8,9 +8,11 @@
 #include <chrono>
 #include <algorithm>
 
-#define BUFFER_MAX      256
-#define SHRT_MAX        32767 
-#define P_DELIM         ","
+#define BUFFER_MAX              256
+#define SHRT_MAX                32767 
+#define P_DELIM                 ","
+
+#define SOLUTION_VALIDATE       true
 
 typedef std::chrono::high_resolution_clock hr_clock;
 
@@ -159,6 +161,19 @@ class Solution {
             grid[coords] = 0;
         }
 
+        void validate(Game* game) {
+            int size = game->dimension * game->dimension;
+
+            for (short i = 0; i < size; i++) {
+                if (game->grid[i]) {
+                    if (std::find(path.begin(), path.end(), i) == path.end()) {
+                        valid = false;
+                        break;
+                    }
+                }
+            }
+        }
+
         std::string dump() {
             std::string dump = std::string(valid ? "valid" : "invalid") + 
                 P_DELIM + std::to_string(upper_bound) +
@@ -176,28 +191,26 @@ class Solver {
     protected:
         Game* game;
 
-        std::vector<Solution*> process_node(Solution* current, Solution* &best) {
-            std::vector<Solution*> explore;
+        void process_all(Solution* current, Solution* &best) {
+            //std::cout << "Processing " << current->dump() << std::endl;
+            iterations++;
 
             // Prune
             if (current->get_size() + current->pieces_left >= best->get_size()) {
-                return explore;
+                return;
             }
 
-            // Find each available next step
-            std::vector<Solution*> available = get_available_steps(current);
-            for (Solution* next : available) {
+            // Explore each available next step
+            for (Solution* next : get_available_steps(current)) {
                 if (next->pieces_left == 0) {
                     // Found solution, compare to others
                     if (next->get_size() < best->get_size()) {
                         best = next;
                     }
                 } else {
-                    explore.push_back(next);
+                    process_all(next, best);
                 }
             }
-
-            return explore;
         }
 
         /**
@@ -239,29 +252,14 @@ class Solver {
          * @returns Best found solution.
          */
         Solution solve() {
-            std::deque<Solution*> stack;
             Solution* best_solution = new Solution(game->upper_bound + 1);
-
             Solution* root = new Solution(game);
+
             root->add_node(game->start_coord);
-            stack.push_back(root);
 
-            while (!stack.empty()) {
-                iterations++;
-                Solution* current = stack.back();
-                stack.pop_back();
-
-                //std::cerr << "Best solution is now: " << best_solution->dump() << std::endl <<
-                 //   "Picked up from stack: " << current->dump() << std::endl;
-
-                for (Solution* next : process_node(current, best_solution)) {
-                    stack.push_back(next);
-                }  
-            }
-
-            for (Solution* sol : stack) { delete sol; }
-            stack.clear();
-
+            process_all(root, best_solution);
+            if (SOLUTION_VALIDATE) { best_solution->validate(game); }
+            
             return *best_solution;
         }
 };
