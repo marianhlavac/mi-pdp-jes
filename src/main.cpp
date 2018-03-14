@@ -175,7 +175,10 @@ class Solution {
         }
 
         std::string dump() {
-            std::string dump = std::string(valid ? "valid" : "invalid") + 
+            std::string validity = std::string(valid ? "valid" : "invalid");
+            if (!SOLUTION_VALIDATE) validity = "undef";
+
+            std::string dump = validity + 
                 P_DELIM + std::to_string(upper_bound) +
                 P_DELIM + std::to_string(get_size()) + P_DELIM;
 
@@ -192,7 +195,6 @@ class Solver {
         Game* game;
 
         void process_all(Solution* current, Solution* &best) {
-            //std::cout << "Processing " << current->dump() << std::endl;
             iterations++;
 
             // Prune
@@ -259,7 +261,7 @@ class Solver {
 
             process_all(root, best_solution);
             if (SOLUTION_VALIDATE) { best_solution->validate(game); }
-            
+
             return *best_solution;
         }
 };
