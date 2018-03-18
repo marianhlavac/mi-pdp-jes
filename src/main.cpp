@@ -194,13 +194,15 @@ class Solution {
 class Solver {
     protected:
         Game* game;
+        Solution* best;
 
-        void process_all(Solution* current, Solution* &best) {
+        void process_all(Solution* current) {
             iterations++;
+            size_t best_result = best->get_size();
             //std::cout << "Processing at thread " << omp_get_thread_num() << ": " << current->dump() << std::endl;
 
             // Prune
-            if (current->get_size() + current->pieces_left >= best->get_size()) {
+            if (current->get_size() + current->pieces_left >= best_result) {
                 return;
             }
 
@@ -208,13 +210,13 @@ class Solver {
             for (Solution* next : get_available_steps(current)) {
                 if (next->pieces_left == 0) {
                     // Found solution, compare to others
-                    if (next->get_size() < best->get_size()) {
-                        best = next;
                     #pragma omp critical
+                    if (next->get_size() < best_result) {
+                        best = next;
                     }
                 } else {
-                    #pragma omp task
-                    process_all(next, best);
+                    #pragma omp task if (current->get_size() > 2)
+                    process_all(next);
                     #pragma omp taskwait
                 }
             }
@@ -246,32 +248,41 @@ class Solver {
                 steps.push_back(next);
             }
 
+            std::reverse(steps.begin(), steps.end());
+
+            // sort(steps.begin(), steps.end(), [](const Solution* a, const Solution* b) -> bool
+            // { 
+            //     return a->pieces_left < b->pieces_left;
+            // });
+
             return steps;
         }
 
     public:
         long iterations = 0;
-        Solver(Game* instance) : game(instance) { }
+
+        Solver(Game* instance) : game(instance) {
+            best = new Solution(instance->upper_bound + 1);
+        }
 
         /**
          * Tries to solve the problem using BB-DFS algorithm.
          * 
          * @returns Best found solution.
          */
-        Solution solve() {
-            Solution* best_solution = new Solution(game->upper_bound + 1);
+        void solve() {
             Solution* root = new Solution(game);
-
             root->add_node(game->start_coord);
 
-            #pragma omp parallel shared(best_solution) 
+            #pragma omp parallel shared(best) 
                 #pragma omp single
-                process_all(root, best_solution);
+                process_all(root);
             
+            if (SOLUTION_VALIDATE) { best->validate(game); }
+        }
 
-            if (SOLUTION_VALIDATE) { (*best_solution)->validate(game); }
-
-            return **best_solution;
+        Solution get_solution() {
+            return *best;
         }
 };
 
@@ -300,8 +311,10 @@ int main(int argc, char** argv) {
             Solver solver(&game);
 
             auto started_at = hr_clock::now();
-            Solution solution = solver.solve();
+            solver.solve();
             std::chrono::duration<double> elapsed = hr_clock::now() - started_at;
+
+            Solution solution = solver.get_solution();
 
             std::cout << argv[i] << P_DELIM << solution.dump() << P_DELIM <<
                 solver.iterations << P_DELIM << elapsed.count() << std::endl;
