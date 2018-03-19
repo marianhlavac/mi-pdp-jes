@@ -8,9 +8,12 @@
 #include <chrono>
 #include <algorithm>
 #include <omp.h>
+#include <iomanip>
 
 #define BUFFER_MAX              256
+#ifndef SHRT_MAX
 #define SHRT_MAX                32767 
+#endif
 #define P_DELIM                 ","
 
 #define SOLUTION_VALIDATE       true
@@ -199,7 +202,6 @@ class Solver {
         void process_all(Solution* current) {
             iterations++;
             size_t best_result = best->get_size();
-            //std::cout << "Processing at thread " << omp_get_thread_num() << ": " << current->dump() << std::endl;
 
             // Prune
             if (current->get_size() + current->pieces_left >= best_result) {
@@ -215,7 +217,7 @@ class Solver {
                         best = next;
                     }
                 } else {
-                    #pragma omp task if (current->get_size() > 2)
+                    #pragma omp task
                     process_all(next);
                     #pragma omp taskwait
                 }
@@ -287,6 +289,10 @@ class Solver {
 };
 
 int main(int argc, char** argv) {
+    // Prepare results output
+    std::stringstream results;
+    results << "filename,validity,upper_bound,solution_length,solution,iterations,elapsed" << std::endl;
+
     // Check command line arguments
     if (argc < 2) {
         std::cerr << "usage: " << argv[0] << " [filename]" << std::endl;
@@ -301,12 +307,10 @@ int main(int argc, char** argv) {
         omp_get_num_devices() << " available devices." << std::endl;
     #endif
 
-    // Print CSV header
-    std::cout << "filename,validity,upper_bound,solution_length,solution,iterations,elapsed" << std::endl;
-
     // Execute and print out results
     try {
         for (int i = 1; i < argc; i++) {
+            std::cerr << "Calculating file " << i << "/" << argc - 1 << std::endl;
             Game game = Game::create_from_file(argv[i]);
             Solver solver(&game);
 
@@ -316,7 +320,7 @@ int main(int argc, char** argv) {
 
             Solution solution = solver.get_solution();
 
-            std::cout << argv[i] << P_DELIM << solution.dump() << P_DELIM <<
+            results << argv[i] << P_DELIM << solution.dump() << P_DELIM <<
                 solver.iterations << P_DELIM << elapsed.count() << std::endl;
         }
     } 
@@ -326,6 +330,8 @@ int main(int argc, char** argv) {
 
     // Clean up
 
+    // Print out the results
+    std::cout << results.str();
     
     return 0;
 }
