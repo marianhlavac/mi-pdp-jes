@@ -8,7 +8,6 @@
 #include <chrono>
 #include <algorithm>
 #include <omp.h>
-#include <iomanip>
 
 #define BUFFER_MAX              256
 #ifndef SHRT_MAX
@@ -199,7 +198,11 @@ class Solver {
         Game* game;
         Solution* best;
 
-        void process_all(Solution* current) {
+        /**
+         * Processes the specified solution. Finds out all available next steps
+         * and call recursively itself to solve in depth.
+         */
+        void process(Solution* current) {
             iterations++;
             size_t best_result = best->get_size();
 
@@ -217,9 +220,8 @@ class Solver {
                         best = next;
                     }
                 } else {
-                    #pragma omp task
-                    process_all(next);
-                    #pragma omp taskwait
+                    #pragma omp task if (current->get_size() <= 3)
+                    process(next);
                 }
             }
         }
@@ -276,9 +278,9 @@ class Solver {
             Solution* root = new Solution(game);
             root->add_node(game->start_coord);
 
-            #pragma omp parallel shared(best) 
+            #pragma omp parallel
                 #pragma omp single
-                process_all(root);
+                process(root);
             
             if (SOLUTION_VALIDATE) { best->validate(game); }
         }
@@ -310,7 +312,7 @@ int main(int argc, char** argv) {
     // Execute and print out results
     try {
         for (int i = 1; i < argc; i++) {
-            std::cerr << "Calculating file " << i << "/" << argc - 1 << std::endl;
+            std::cerr << "Calculating file " << i << "/" << argc - 1 << "\r";
             Game game = Game::create_from_file(argv[i]);
             Solver solver(&game);
 
@@ -323,12 +325,14 @@ int main(int argc, char** argv) {
             results << argv[i] << P_DELIM << solution.dump() << P_DELIM <<
                 solver.iterations << P_DELIM << elapsed.count() << std::endl;
         }
+        std::cerr << std::endl;
     } 
     catch (std::runtime_error err) {
         std::cerr << err.what();
     }
 
     // Clean up
+    // TODO: JUST DO IT. Yesterday you said tomorrow. Don't let your dreams be dreams.
 
     // Print out the results
     std::cout << results.str();

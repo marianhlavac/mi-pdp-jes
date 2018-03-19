@@ -21,6 +21,7 @@
         "iostream": "cpp",
         "queue": "cpp",
         "bitset": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "memory": "cpp"
     }
 }
