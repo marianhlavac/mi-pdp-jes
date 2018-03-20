@@ -304,9 +304,8 @@ int main(int argc, char** argv) {
     // Print out OpenMP stats
     #ifdef _OPENMP
     std::cerr << "-!- OpenMP ready. "  <<
-        omp_get_num_procs() << " CPUs available, " << 
         omp_get_max_threads() << " threads available on " << 
-        omp_get_num_devices() << " available devices." << std::endl;
+        omp_get_num_procs() << " CPUs. " << std::endl; 
     #endif
 
     // Execute and print out results
