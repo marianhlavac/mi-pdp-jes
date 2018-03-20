@@ -13,7 +13,7 @@ dev:
 	$(CC) $(SRC) $(CPPFLAGS) -O0 -g -o bin/pdpjes-seq $(LDFLAGS)
 
 retarded:
-	gcc $(SRC) -std=c++11 -fopenmp -O3 -o bin/pdpjes
+	gcc $(SRC) -std=c++11 -fopenmp -O3 -o bin/pdpjes -lstdc++ -shared-libgcc
 
 run: pdpjes
 	./bin/pdpjes $(FILE)
