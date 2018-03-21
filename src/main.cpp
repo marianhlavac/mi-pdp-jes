@@ -220,7 +220,7 @@ class Solver {
                         best = next;
                     }
                 } else {
-                    #pragma omp task if (current->get_size() <= 3)
+                    #pragma omp task if (current->get_size() <= 6)
                     process(next);
                 }
             }
