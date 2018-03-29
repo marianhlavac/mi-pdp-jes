@@ -197,12 +197,9 @@ class Solver {
     protected:
         Game* game;
         Solution* best;
+        std::deque<Solution*> stack;
 
-        /**
-         * Processes the specified solution. Finds out all available next steps
-         * and call recursively itself to solve in depth.
-         */
-        void process(Solution* current) {
+        void process_node(Solution* current) {
             iterations++;
             size_t best_result = best->get_size();
 
@@ -220,8 +217,7 @@ class Solver {
                         best = next;
                     }
                 } else {
-                    #pragma omp task if (current->get_size() <= 6)
-                    process(next);
+                    stack.push_back(next);
                 }
             }
         }
@@ -252,13 +248,6 @@ class Solver {
                 steps.push_back(next);
             }
 
-            std::reverse(steps.begin(), steps.end());
-
-            // sort(steps.begin(), steps.end(), [](const Solution* a, const Solution* b) -> bool
-            // { 
-            //     return a->pieces_left < b->pieces_left;
-            // });
-
             return steps;
         }
 
@@ -278,10 +267,19 @@ class Solver {
             Solution* root = new Solution(game);
             root->add_node(game->start_coord);
 
-            #pragma omp parallel
-                #pragma omp single
-                process(root);
-            
+            stack.push_back(root);
+
+            while (!stack.empty()) {
+                iterations++;
+                Solution* current = stack.back();
+                stack.pop_back();
+
+                process_node(current);
+            }
+
+            for (Solution* sol : stack) { delete sol; }
+            stack.clear();
+
             if (SOLUTION_VALIDATE) { best->validate(game); }
         }
 
