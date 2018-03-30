@@ -5,6 +5,7 @@
 #include <chrono>
 #include <vector>
 #include <stack>
+#include <queue>
 #include <chrono>
 #include <algorithm>
 #include <omp.h>
@@ -14,6 +15,18 @@
 #define SHRT_MAX                32767 
 #endif
 #define P_DELIM                 ","
+
+#ifdef _OPENMP
+#define XOMP_THREADS omp_get_max_threads()
+#else
+#define XOMP_THREADS 4
+#endif
+
+#ifdef _OPENMP
+#define XOMP_TID omp_get_thread_num()
+#else
+#define XOMP_TID "none"
+#endif
 
 #define SOLUTION_VALIDATE       true
 
@@ -197,15 +210,14 @@ class Solver {
     protected:
         Game* game;
         Solution* best;
-        std::deque<Solution*> stack;
 
-        void process_node(Solution* current) {
-            iterations++;
+        std::vector<Solution*> process_node(Solution* current) {
+            std::vector<Solution*> explore;
             size_t best_result = best->get_size();
 
             // Prune
             if (current->get_size() + current->pieces_left >= best_result) {
-                return;
+                return explore;
             }
 
             // Explore each available next step
@@ -217,9 +229,11 @@ class Solver {
                         best = next;
                     }
                 } else {
-                    stack.push_back(next);
+                    explore.push_back(next);
                 }
             }
+
+            return explore;
         }
 
         /**
@@ -264,23 +278,49 @@ class Solver {
          * @returns Best found solution.
          */
         void solve() {
+            std::queue<Solution*> queue;
+
+            // Create root node
             Solution* root = new Solution(game);
             root->add_node(game->start_coord);
+            queue.push(root);
 
-            stack.push_back(root);
+            // Generate some states to parallel explore
+            while (queue.size() < XOMP_THREADS) {
+                Solution* current = queue.front();
+                queue.pop();
 
-            while (!stack.empty()) {
-                iterations++;
-                Solution* current = stack.back();
-                stack.pop_back();
-
-                process_node(current);
+                for (Solution* next : process_node(current)) {
+                    queue.push(next);
+                }
             }
 
-            for (Solution* sol : stack) { delete sol; }
-            stack.clear();
+            std::cerr << "Genereated " << queue.size() << " states to start with." << std::endl;
+
+            #pragma omp parallel shared(best)
+            while (!queue.empty()) {
+                Solution* subroot = queue.front();
+                queue.pop();
+
+                //std::cerr << "Solving from thread #" << XOMP_TID << ": " << subroot->dump() << std::endl;
+                solve_seq(subroot);
+            }
 
             if (SOLUTION_VALIDATE) { best->validate(game); }
+        }
+
+        void solve_seq(Solution* root) {
+            std::stack<Solution*> stack;
+            stack.push(root);
+
+            while (!stack.empty()) {
+                Solution* current = stack.top();
+                stack.pop();
+
+                for (Solution* next : process_node(current)) {
+                    stack.push(next);
+                }
+            }
         }
 
         Solution get_solution() {
