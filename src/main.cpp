@@ -286,7 +286,7 @@ class Solver {
             queue.push(root);
 
             // Generate some states to parallel explore
-            while (queue.size() < XOMP_THREADS) {
+            while (queue.size() < XOMP_THREADS * 10) {
                 Solution* current = queue.front();
                 queue.pop();
 
@@ -295,9 +295,7 @@ class Solver {
                 }
             }
 
-            std::cerr << "Genereated " << queue.size() << " states to start with." << std::endl;
-
-            #pragma omp parallel shared(best)
+            #pragma omp parallel shared(best, queue)
             while (!queue.empty()) {
                 Solution* subroot = queue.front();
                 queue.pop();
