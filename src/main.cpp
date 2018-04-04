@@ -297,7 +297,7 @@ class Solver {
                 delete current;
             }
 
-            #pragma omp parallel shared(best, queue)
+            #pragma omp parallel default(shared)
             while (!queue.empty()) {
                 Solution* subroot = queue.front();
                 queue.pop();
