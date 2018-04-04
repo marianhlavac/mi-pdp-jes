@@ -287,8 +287,13 @@ class Solver {
 
             // Generate some states to parallel explore
             while (queue.size() < XOMP_THREADS * 10) {
-                Solution* current = queue.front();
-                queue.pop();
+                Solution* current;
+
+                #pragma omp critical
+                {
+                    current = queue.front();
+                    queue.pop();
+                }
 
                 for (Solution* next : process_node(current)) {
                     queue.push(next);
