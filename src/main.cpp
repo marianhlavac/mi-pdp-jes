@@ -46,7 +46,7 @@ class Game {
         short start_coord = 0;
 
         ~Game() {
-            free(grid);
+            delete[] grid;
         }
         
         /**
@@ -89,7 +89,7 @@ class Game {
             }
 
             game.pieces = pieces;
-            free(line);
+            delete[] line;
             return game;
         }
 };
@@ -139,7 +139,7 @@ class Solution {
         }
 
         ~Solution() {
-            free(grid);
+            delete[] grid;
         }
 
         void copy_grid(bool* source, size_t size) {
@@ -226,7 +226,7 @@ class Solver {
                     // Found solution, compare to others
                     #pragma omp critical
                     if (next->get_size() < best_result) {
-                        best = next;
+                        best = new Solution(next);
                     }
                 } else {
                     explore.push_back(next);
@@ -269,7 +269,7 @@ class Solver {
         long iterations = 0;
 
         Solver(Game* instance) : game(instance) {
-            best = new Solution(instance->upper_bound + 1);
+            best = new Solution(instance->upper_bound + 1); // FIXME: SANITIZE (vynechat)
         }
 
         /**
@@ -293,6 +293,8 @@ class Solver {
                 for (Solution* next : process_node(current)) {
                     queue.push(next);
                 }
+
+                delete current;
             }
 
             #pragma omp parallel shared(best, queue)
@@ -300,9 +302,10 @@ class Solver {
                 Solution* subroot = queue.front();
                 queue.pop();
 
-                //std::cerr << "Solving from thread #" << XOMP_TID << ": " << subroot->dump() << std::endl;
                 solve_seq(subroot);
             }
+
+            delete root;
 
             if (SOLUTION_VALIDATE) { best->validate(game); }
         }
@@ -315,9 +318,15 @@ class Solver {
                 Solution* current = stack.top();
                 stack.pop();
 
-                for (Solution* next : process_node(current)) {
+                std::vector<Solution*> processed = process_node(current);
+
+                for (Solution* next : processed) {  // FIXME: SANITIZE
                     stack.push(next);
                 }
+
+                // std::cerr << current->dump() << std::endl;
+
+                if (processed.size() == 0) delete current;
             }
         }
 
@@ -365,9 +374,6 @@ int main(int argc, char** argv) {
     catch (std::runtime_error err) {
         std::cerr << err.what();
     }
-
-    // Clean up
-    // TODO: JUST DO IT. Yesterday you said tomorrow. Don't let your dreams be dreams.
 
     // Print out the results
     std::cout << results.str();
