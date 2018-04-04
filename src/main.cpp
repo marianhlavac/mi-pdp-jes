@@ -278,38 +278,33 @@ class Solver {
          * @returns Best found solution.
          */
         void solve() {
-            std::queue<Solution*> queue;
+            std::deque<Solution*> queue;
 
             // Create root node
             Solution* root = new Solution(game);
             root->add_node(game->start_coord);
-            queue.push(root);
+            queue.push_back(root);
 
             // Generate some states to parallel explore
             while (queue.size() < XOMP_THREADS * 10) {
                 Solution* current;
-
-                #pragma omp critical
-                {
-                    current = queue.front();
-                    queue.pop();
-                }
+                current = queue.front();
+                queue.pop_front();
 
                 for (Solution* next : process_node(current)) {
-                    queue.push(next);
+                    queue.push_back(next);
                 }
 
                 delete current;
             }
 
-            #pragma omp parallel default(shared)
-            while (!queue.empty()) {
-                Solution* subroot = queue.front();
-                queue.pop();
-
-                solve_seq(subroot);
+            #pragma omp parallel for default(shared)
+            for (int i = 0; i < queue.size(); i++) {
+                solve_seq(queue[i]);
             }
 
+
+            //delete[] queue;
             delete root;
 
             if (SOLUTION_VALIDATE) { best->validate(game); }
