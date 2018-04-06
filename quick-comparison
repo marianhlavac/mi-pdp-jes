@@ -1,5 +1,0 @@
-#!/bin/zsh
-
-make
-./bin/pdpjes-seq test/fixtures/kun{01,02,03,04,05,06,07,08,09}.txt | column -s , -t
-./bin/pdpjes test/fixtures/kun{01,02,03,04,05,06,07,08,09}.txt | column -s , -t
