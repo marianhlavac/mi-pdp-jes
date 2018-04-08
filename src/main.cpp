@@ -11,23 +11,9 @@
 #include <omp.h>
 
 #define BUFFER_MAX              256
-#ifndef SHRT_MAX
 #define SHRT_MAX                32767 
-#endif
 #define P_DELIM                 ","
-
-#ifdef _OPENMP
-#define XOMP_THREADS omp_get_max_threads()
-#else
-#define XOMP_THREADS 4
-#endif
-
-#ifdef _OPENMP
-#define XOMP_TID omp_get_thread_num()
-#else
-#define XOMP_TID "none"
-#endif
-
+#define SYS_THR_INIT            128
 #define SOLUTION_VALIDATE       true
 
 typedef std::chrono::high_resolution_clock hr_clock;
@@ -45,6 +31,9 @@ class Game {
         short pieces = 0;
         short start_coord = 0;
 
+        Game(bool* grid, unsigned short dimension, short up_bound) : grid(grid),
+            dimension(dimension), upper_bound(up_bound) { }
+
         ~Game() {
             delete[] grid;
         }
@@ -58,8 +47,8 @@ class Game {
          * and '3' for knight piece (there must be only one knight).
          */
         static Game create_from_file(const char* filename) {
-            Game game;
             std::ifstream file;
+            int dim, bound;
             file.open(filename);
 
             if (file.fail()) {
@@ -70,12 +59,12 @@ class Game {
             short pieces = 0;
 
             // Read first line
-            file >> game.dimension >> game.upper_bound;
+            file >> dim >> bound;
             file.getline(line, BUFFER_MAX);
 
-            // Allocate memory for the grid
-            int items_count = game.dimension * game.dimension;
-            game.grid = new bool[items_count]();
+            // Create the game object
+            int items_count = dim * dim;
+            Game game(new bool[items_count](), dim, bound);
 
             // Read the grid
             int line_num = 0;
@@ -126,7 +115,8 @@ class Solution {
         }
 
         Solution(short upper_bound) : 
-            upper_bound(upper_bound), valid(false) { }
+            upper_bound(upper_bound), valid(false) { 
+        }
 
         Solution(const Solution* s) : 
             path(s->path), valid(s->valid), pieces_left(s->pieces_left),
@@ -217,6 +207,7 @@ class Solver {
 
             // Prune
             if (current->get_size() + current->pieces_left >= best_result) {
+                delete current;
                 return explore;
             }
 
@@ -226,10 +217,11 @@ class Solver {
                     // Found solution, compare to others
                     #pragma omp critical
                     if (next->get_size() < best_result) {
-                        best = new Solution(next);
+                        best = next;
                     }
                 } else {
                     explore.push_back(next);
+                    delete current;
                 }
             }
 
@@ -269,7 +261,11 @@ class Solver {
         long iterations = 0;
 
         Solver(Game* instance) : game(instance) {
-            best = new Solution(instance->upper_bound + 1); // FIXME: SANITIZE (vynechat)
+            best = new Solution(instance->upper_bound + 1);
+        }
+
+        ~Solver() {
+            // TODO: Sanitize BEST
         }
 
         /**
@@ -286,9 +282,8 @@ class Solver {
             queue.push_back(root);
 
             // Generate some states to parallel explore
-            while (queue.size() < XOMP_THREADS * 10) {
-                Solution* current;
-                current = queue.front();
+            while (queue.size() < SYS_THR_INIT) {
+                Solution* current = queue.front();
                 queue.pop_front();
 
                 for (Solution* next : process_node(current)) {
@@ -304,9 +299,6 @@ class Solver {
             }
 
 
-            //delete[] queue;
-            delete root;
-
             if (SOLUTION_VALIDATE) { best->validate(game); }
         }
 
@@ -318,15 +310,11 @@ class Solver {
                 Solution* current = stack.top();
                 stack.pop();
 
-                std::vector<Solution*> processed = process_node(current);
-
-                for (Solution* next : processed) {  // FIXME: SANITIZE
+                for (Solution* next : process_node(current)) { // FIXME: SANITIZE
                     stack.push(next);
                 }
 
                 // std::cerr << current->dump() << std::endl;
-
-                if (processed.size() == 0) delete current;
             }
         }
 
