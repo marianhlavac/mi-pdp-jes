@@ -221,10 +221,10 @@ class Solver {
                     }
                 } else {
                     explore.push_back(next);
-                    delete current;
                 }
             }
 
+            delete current;
             return explore;
         }
 
@@ -289,8 +289,6 @@ class Solver {
                 for (Solution* next : process_node(current)) {
                     queue.push_back(next);
                 }
-
-                delete current;
             }
 
             #pragma omp parallel for default(shared)
