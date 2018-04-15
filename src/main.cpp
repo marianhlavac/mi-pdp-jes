@@ -197,6 +197,10 @@ class Solution {
                 }
             }
         }
+        
+        void invalidate() {
+            valid = false;
+        }
 
         std::string dump() {
             std::string validity = std::string(valid ? "valid" : "invalid");
@@ -296,7 +300,11 @@ class Solver {
 
             // Generate some states to parallel explore
             while (queue.size() < count) {
-                Solution* current = queue.front();
+                if (queue.size() == 0) {
+                    break;
+                }
+
+                Solution* current = queue.front(); // queue has nonexisting item
                 queue.pop_front();
 
                 for (Solution* next : process_node(current)) {
@@ -351,6 +359,11 @@ class Solver {
         }
 };
 
+void debug(int identifier, const char * message, size_t parameter) {
+    std::cerr << "[" << (identifier > 0 ? "slave-" : "master-") << 
+        identifier << "] \t" << message << " " << parameter << std::endl;
+}
+
 void master(int world_size, int argc, char** argv) {
     // Prepare results output
     std::stringstream results;
@@ -364,9 +377,8 @@ void master(int world_size, int argc, char** argv) {
         MPI_Status status;
         int working = 0;
 
-        std::cout << "Broadcasting the filename to all slaves..." << std::endl;
-
         // Broadcast this filename
+        //debug(0, "Broadcasting new filename to all slaves", 0);
         MPI_Barrier(MPI_COMM_WORLD);
         MPI_Bcast(argv[i], strlen(argv[i]), MPI_CHAR, 0, MPI_COMM_WORLD);
 
@@ -375,6 +387,10 @@ void master(int world_size, int argc, char** argv) {
 
         // Generate some states for the distribution
         std::deque<Solution*> queue = solver.generate_queue(new Solution(&game), 10);
+
+        for (Solution* item : queue) {
+            std::cerr << item->dump() << std::endl;
+        }
 
         // Distribute work to slaves
         do {
@@ -388,9 +404,7 @@ void master(int world_size, int argc, char** argv) {
                 MPI_Recv(path, path_size, MPI_SHORT, status.MPI_SOURCE, 
                     C_TAG_IMDONE, MPI_COMM_WORLD, &status);
                 
-                std::cout << "Master received some data back." << std::endl;
-                // TODO: Build up the Solution, compare it with the current
-                // best and replace, if better.
+                //debug(0, "Master received a solution from slave", status.MPI_SOURCE);
                 Solution* solution = new Solution(&game, path, path_size);
                 solver.suggest_solution(solution);
             } else {
@@ -400,11 +414,14 @@ void master(int world_size, int argc, char** argv) {
             if ((status.MPI_TAG == C_TAG_IMDONE || status.MPI_TAG == C_TAG_IMREADY) && queue.size() > 0) {
                 MPI_Send(queue.front()->path_to_arr(), queue.front()->get_size(), MPI_SHORT, 
                     status.MPI_SOURCE, C_TAG_WORK, MPI_COMM_WORLD);
+                //debug(0, "Sending a state of size" , queue.front()->get_size());
+                //debug(0, "... to slave" , status.MPI_SOURCE);
+                
                 queue.pop_front();
                 working++;
             }
 
-            std::cout << working << " slaves working." << std::endl;
+            //debug(0, "Slaves working" , working);
         } while (working > 0);
 
         // Announce that's all for this file (shame I can't broadcast tags)
@@ -440,7 +457,7 @@ bool slave(int world_rank) {
     if (strlen(filename) == 0) { return false; }
 
     // Load the file
-    std::cout << "Slave " << world_rank << " will load a file: " << filename << std::endl;
+    debug(world_rank, filename , 0);
     Game game = Game::create_from_file(filename);
     Solver solver(&game);
 
@@ -462,14 +479,21 @@ bool slave(int world_rank) {
 
             short* state = new short[state_size];
             MPI_Recv(state, state_size, MPI_SHORT, 0, C_TAG_WORK, MPI_COMM_WORLD, &status);
-
-            std::cout << "Slave " << world_rank << " received a state of length: " << state_size << std::endl;
+            std::this_thread::sleep_for(std::chrono::milliseconds(60));
+            debug(world_rank, "Received state for solving of size" , state_size);
             Solution* root = new Solution(&game, state, state_size);
-            std::this_thread::sleep_for(std::chrono::milliseconds(240));
+            std::this_thread::sleep_for(std::chrono::milliseconds(40));
+
             solver.solve(root);
-            std::cout << "Slave " << world_rank << " is done." << std::endl;
+            debug(world_rank, "Solved. Sending to master.", 0);
             Solution* solution = solver.get_solution();
-            MPI_Send(solution->path_to_arr(), solution->get_size(), MPI_SHORT, 0, C_TAG_IMDONE, MPI_COMM_WORLD);
+            size_t solution_size = solution->get_size();
+            if (solution->valid) {
+                MPI_Send(solution->path_to_arr(), solution_size, MPI_SHORT, 0, C_TAG_IMDONE, MPI_COMM_WORLD);
+            } else {
+                std::cerr << "Sending empty one" << std::endl;
+                MPI_Send(nullptr, 0, MPI_SHORT, 0, C_TAG_IMDONE, MPI_COMM_WORLD);
+            }
         }
     }
 
@@ -479,6 +503,8 @@ bool slave(int world_rank) {
 int main(int argc, char** argv) {
     int world_rank = 0;
     int world_size;
+
+    std::this_thread::sleep_for(std::chrono::seconds(3));
 
     // Check command line arguments
     if (argc < 2) {
