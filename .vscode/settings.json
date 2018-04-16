@@ -22,6 +22,11 @@
         "string": "cpp",
         "string_view": "cpp",
         "vector": "cpp",
-        "ios": "cpp"
+        "ios": "cpp",
+        "utility": "cpp",
+        "system_error": "cpp",
+        "locale": "cpp",
+        "__locale": "cpp",
+        "__string": "cpp"
     }
 }
