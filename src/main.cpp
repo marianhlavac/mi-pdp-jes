@@ -17,7 +17,7 @@
 #define SHRT_MAX                32767 
 #define P_DELIM                 ","
 #define SYS_THR_INIT            40
-#define SOLUTION_VALIDATE       false
+#define SOLUTION_VALIDATE       true
 #define DEBUG_NODISTRIBUTE      false
 
 #define C_TAG_WORK              100
@@ -359,7 +359,7 @@ class Solver {
         }
 
         void suggest_solution(Solution* solution) {
-            if (solution->get_size() < best->get_size()) {
+            if (solution->valid && solution->get_size() < best->get_size()) {
                 best = solution;
             }
         }
