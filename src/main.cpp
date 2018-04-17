@@ -17,8 +17,9 @@
 #define SHRT_MAX                32767 
 #define P_DELIM                 ","
 #define SYS_THR_INIT            40
+#define SYS_MPI_GEN             512
 #define SOLUTION_VALIDATE       true
-#define DEBUG_NODISTRIBUTE      false
+#define DEBUG_NODISTRIBUTE      true
 
 #define C_TAG_WORK              100
 #define C_TAG_FINISH            101
@@ -387,7 +388,7 @@ void master(int world_size, int argc, char** argv) {
         if (DEBUG_NODISTRIBUTE) { 
             queue.push_back(new Solution(&game));
         } else {
-            queue = solver.generate_queue(new Solution(&game), 10);
+            queue = solver.generate_queue(new Solution(&game), SYS_MPI_GEN);
         }
 
         // Measure the time
