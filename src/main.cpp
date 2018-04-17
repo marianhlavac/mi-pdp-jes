@@ -18,6 +18,7 @@
 #define P_DELIM                 ","
 #define SYS_THR_INIT            4
 #define SOLUTION_VALIDATE       true
+#define DEBUG_NODISTRIBUTE      true
 
 #define C_TAG_WORK              100
 #define C_TAG_FINISH            101
@@ -374,6 +375,7 @@ void master(int world_size, int argc, char** argv) {
     for (int i = 1; i < argc; i++) {
         Game game = Game::create_from_file(argv[i]);
         Solver solver(&game);
+        std::deque<Solution*> queue;
         MPI_Status status;
         int working = 0;
 
@@ -385,9 +387,11 @@ void master(int world_size, int argc, char** argv) {
         auto started_at = hr_clock::now();
 
         // Generate some states for the distribution
-        // std::deque<Solution*> queue = solver.generate_queue(new Solution(&game), 10);
-        std::deque<Solution*> queue;
-        queue.push_back(new Solution(&game));
+        if (DEBUG_NODISTRIBUTE) { 
+            queue.push_back(new Solution(&game));
+        } else {
+            queue = solver.generate_queue(new Solution(&game), 10);
+        }
 
         // Distribute work to slaves
         do {
