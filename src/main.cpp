@@ -16,9 +16,9 @@
 #define BUFFER_MAX              256
 #define SHRT_MAX                32767 
 #define P_DELIM                 ","
-#define SYS_THR_INIT            4
-#define SOLUTION_VALIDATE       true
-#define DEBUG_NODISTRIBUTE      true
+#define SYS_THR_INIT            40
+#define SOLUTION_VALIDATE       false
+#define DEBUG_NODISTRIBUTE      false
 
 #define C_TAG_WORK              100
 #define C_TAG_FINISH            101
@@ -333,7 +333,7 @@ class Solver {
         void solve(Solution* root) {
             std::deque<Solution*> queue = generate_queue(root, SYS_THR_INIT);
 
-            //#pragma omp parallel for default(shared)
+            #pragma omp parallel for default(shared)
             for (int i = 0; i < queue.size(); i++) {
                 solve_seq(queue[i]);
             }
@@ -359,7 +359,7 @@ class Solver {
         }
 
         void suggest_solution(Solution* solution) {
-            if (solution->valid && solution->get_size() < best->get_size()) {
+            if (solution->get_size() < best->get_size()) {
                 best = solution;
             }
         }
@@ -383,15 +383,15 @@ void master(int world_size, int argc, char** argv) {
         MPI_Barrier(MPI_COMM_WORLD);
         MPI_Bcast(argv[i], strlen(argv[i]), MPI_CHAR, 0, MPI_COMM_WORLD);
 
-        // Measure the time
-        auto started_at = hr_clock::now();
-
         // Generate some states for the distribution
         if (DEBUG_NODISTRIBUTE) { 
             queue.push_back(new Solution(&game));
         } else {
             queue = solver.generate_queue(new Solution(&game), 10);
         }
+
+        // Measure the time
+        auto started_at = hr_clock::now();
 
         // Distribute work to slaves
         do {
@@ -424,12 +424,12 @@ void master(int world_size, int argc, char** argv) {
             }
         } while (working > 0);
 
+        std::chrono::duration<double> elapsed = hr_clock::now() - started_at;
+
         // Announce that's all for this file (shame I can't broadcast tags)
         for (int i = 1; i < world_size; ++i) {
             MPI_Send(nullptr, 0, MPI_BYTE, i, C_TAG_FINISH, MPI_COMM_WORLD);
         }
-
-        std::chrono::duration<double> elapsed = hr_clock::now() - started_at;
 
         // Gather results
         Solution* solution = solver.get_solution();
