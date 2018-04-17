@@ -17,9 +17,9 @@
 #define SHRT_MAX                32767 
 #define P_DELIM                 ","
 #define SYS_THR_INIT            40
-#define SYS_MPI_GEN             512
+#define SYS_MPI_GEN             64
 #define SOLUTION_VALIDATE       true
-#define DEBUG_NODISTRIBUTE      true
+#define DEBUG_NODISTRIBUTE      false
 
 #define C_TAG_WORK              100
 #define C_TAG_FINISH            101
