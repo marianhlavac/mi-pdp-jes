@@ -2,27 +2,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Apple LLDB",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/bin/pdpjes",
-            "args":[
-                "test/fixtures/kun01.txt",
-                "test/fixtures/kun02.txt"
-            ],
-            "cwd": "${workspaceFolder}",
-            "MIMode": "lldb"
+            "type": "lldb",
+            "request": "attach",
+            "name": "(lldb) Attach",
+            "pid": "${command:pickMyProcess}"
         },
-        {
-            "name": "Brew LLDB",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/bin/pdpjes",
-            "args":[
-                "test/fixtures/kun01.txt"
-            ],
-            "cwd": "${workspaceFolder}",
-            "miDebuggerPath": "/usr/bin/gdb"
-        }
     ]
 }

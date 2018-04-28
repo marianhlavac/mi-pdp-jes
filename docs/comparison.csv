@@ -1,0 +1,13 @@
+filename,sequential,task_parallel,data_parallel,mpi
+../test/fixtures/kun01.txt,0.028218,0.00364511,0.010614,0.0367116
+../test/fixtures/kun02.txt,0.017044,0.00383222,0.006578,0.0515702
+../test/fixtures/kun03.txt,2.601100,0.135497,0.112243,0.434325
+../test/fixtures/kun04.txt,0.052444,0.0124687,0.006759,0.0913235
+../test/fixtures/kun05.txt,0.052078,0.0460448,0.107471,0.273317
+../test/fixtures/kun06.txt,0.031005,0.00381952,0.002675,0.0452754
+../test/fixtures/kun07.txt,0.019723,0.00482042,0.010776,0.414493
+../test/fixtures/kun08.txt,2.742440,0.0998501,0.116484,2.99294
+../test/fixtures/kun09.txt,0.379592,0.0648954,0.074875,0.111038
+../test/fixtures/kun10.txt,14.022900,2.10364,4.702110,3.40835
+../test/fixtures/kun11.txt,124.001000,40.9145,160.478000,30.4663
+../test/fixtures/kun12.txt,20.010500,2.14755,7.347330,3.15131
