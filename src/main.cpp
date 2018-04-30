@@ -508,7 +508,6 @@ void simple_solve(int argc, char** argv, int argoffset, bool seq) {
         << std::endl;
 
     for (int i = 1 + argoffset; i < argc; i++) {
-        std::cerr << argv[i] << std::endl;
         Game game = Game::create_from_file(argv[i]);
         Solver solver(&game);
 
@@ -543,10 +542,8 @@ int main(int argc, char** argv) {
 
     // Check for parameter setting
     if (strcmp(argv[1],"--serial") == 0) {
-        std::cerr << "Non-parallel solve..." << std::endl;
         simple_solve(argc, argv, 1, true);
     } else if (strcmp(argv[1],"--nompi") == 0) {
-        std::cerr << "Non-MPI solve..." << std::endl;
         simple_solve(argc, argv, 1, false);
     } else {
         // Initialize MPI
