@@ -61,7 +61,7 @@ class Game {
             int dim, bound;
             file.open(filename);
 
-            if (file.fail()) {
+            if (!file.is_open()) {
                 throw std::runtime_error("File doesn't exist.");
             }
 
@@ -500,6 +500,37 @@ bool slave(int world_rank) {
     return true;
 }
 
+void simple_solve(int argc, char** argv, int argoffset, bool seq) {
+    // Prepare results output
+    std::stringstream results;
+    results << 
+        "filename,validity,upper_bound,solution_length,solution,iterations,elapsed"
+        << std::endl;
+
+    for (int i = 1 + argoffset; i < argc; i++) {
+        std::cerr << argv[i] << std::endl;
+        Game game = Game::create_from_file(argv[i]);
+        Solver solver(&game);
+
+        // Measure the time
+        auto started_at = hr_clock::now();
+        if (seq) {
+            solver.solve_seq(new Solution(&game));
+        } else {
+            solver.solve();
+        }
+        std::chrono::duration<double> elapsed = hr_clock::now() - started_at;
+
+        // Gather results
+        Solution* solution = solver.get_solution();
+        results << argv[i] << P_DELIM << solution->dump() << P_DELIM <<
+            solver.iterations << P_DELIM << elapsed.count() << std::endl;
+    }
+
+    // Print out the results
+    std::cout << results.str();
+}
+
 int main(int argc, char** argv) {
     int world_rank = 0;
     int world_size;
@@ -510,20 +541,29 @@ int main(int argc, char** argv) {
         return 64;
     }
 
-    // Initialize MPI
-    MPI_Init(NULL, NULL);
-    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-
-    // Branch out the program execution
-    if (world_rank == 0) {
-        master(world_size, argc, argv); 
+    // Check for parameter setting
+    if (strcmp(argv[1],"--serial") == 0) {
+        std::cerr << "Non-parallel solve..." << std::endl;
+        simple_solve(argc, argv, 1, true);
+    } else if (strcmp(argv[1],"--nompi") == 0) {
+        std::cerr << "Non-MPI solve..." << std::endl;
+        simple_solve(argc, argv, 1, false);
     } else {
-        while (slave(world_rank)) { }
-    }
+        // Initialize MPI
+        MPI_Init(NULL, NULL);
+        MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+        MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
-    // Finalize MPI
-    MPI_Finalize();
+        // Branch out the program execution
+        if (world_rank == 0) {
+            master(world_size, argc, argv); 
+        } else {
+            while (slave(world_rank)) { }
+        }
+
+        // Finalize MPI
+        MPI_Finalize();
+    }
     
     return 0;
 }
