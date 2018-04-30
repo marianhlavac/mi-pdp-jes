@@ -1,0 +1,18 @@
+#!/bin/sh
+
+#$ -S /bin/bash
+#$ -cwd
+#$ -e ./dist/
+#$ -o ./dist/
+#$ -V
+
+DATASET="test/fixtures/kun10.txt"
+
+echo "mpi X2 num=1 ==2"
+OMP_NUM_THREADS=1 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
+OMP_NUM_THREADS=1 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
+OMP_NUM_THREADS=1 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
+echo "mpi X2 num=X ==40"
+mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
+mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
+mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}

@@ -1,0 +1,24 @@
+#!/bin/sh
+
+#$ -S /bin/bash
+#$ -cwd
+#$ -e ./dist/
+#$ -o ./dist/
+#$ -pe ompi 1
+
+DATASET="test/fixtures/kun10.txt"
+
+echo "serial ==1"
+./bin/pdpjes --serial ${DATASET}
+./bin/pdpjes --serial ${DATASET}
+./bin/pdpjes --serial ${DATASET}
+
+echo "nompi ==2"
+OMP_NUM_THREADS=2 ./bin/pdpjes ${DATASET}
+OMP_NUM_THREADS=2 ./bin/pdpjes ${DATASET}
+OMP_NUM_THREADS=2 ./bin/pdpjes ${DATASET}
+
+echo "nompi ==X"
+./bin/pdpjes ${DATASET}
+./bin/pdpjes ${DATASET}
+./bin/pdpjes ${DATASET}
