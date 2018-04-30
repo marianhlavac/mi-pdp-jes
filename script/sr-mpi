@@ -6,9 +6,9 @@
 #$ -o ./dist/
 #$ -V
 
-DATASET="test/fixtures/kun10.txt"
+DATASET="test/fixtures/kun10.txt" #TODO: this is wrong dataset
 
-echo "$ mpi162 t!"
+echo "$ mpi162 t!" #TODO: this should be mpi162 non-t
 OMP_NUM_THREADS=2 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
 OMP_NUM_THREADS=2 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
 OMP_NUM_THREADS=2 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
