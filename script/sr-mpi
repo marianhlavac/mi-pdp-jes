@@ -8,11 +8,13 @@
 
 DATASET="test/fixtures/kun10.txt"
 
-echo "mpi X2 num=1 ==2"
-OMP_NUM_THREADS=1 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
-OMP_NUM_THREADS=1 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
-OMP_NUM_THREADS=1 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
-echo "mpi X2 num=X ==40"
+echo "$ mpi162 t!"
+OMP_NUM_THREADS=2 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
+OMP_NUM_THREADS=2 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
+OMP_NUM_THREADS=2 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
+echo "$ ---"
+
+echo "$ mpiX2"
 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}

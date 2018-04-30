@@ -1,0 +1,15 @@
+#!/bin/sh
+
+#$ -S /bin/bash
+#$ -cwd
+#$ -e ./dist/
+#$ -o ./dist/
+#$ -pe ompi 1
+
+DATASET="test/fixtures/final*.txt"
+
+echo "$ serial"
+./bin/pdpjes --serial ${DATASET}
+./bin/pdpjes --serial ${DATASET}
+./bin/pdpjes --serial ${DATASET}
+echo "$ ---"
