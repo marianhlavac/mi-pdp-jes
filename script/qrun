@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# Queue serial jobs
+qrun2 20c 1 pdp_serial script/sr-serial
+
+# Queue paralel jobs
+
+for file in script/sr-mpi* script/sr-nompi*
+do
+    qrun2 20c 3 pdp_long $file
+done
