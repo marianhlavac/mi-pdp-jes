@@ -223,8 +223,6 @@ class Solution {
                 dump += to_coords_str(coord) + ";";
             }
 
-            dump += std::to_string(pieces_left);
-
             return dump;
         }
 
