@@ -6,15 +6,15 @@
 #$ -o ./dist/
 #$ -V
 
-DATASET="test/fixtures/kun10.txt" #TODO: this is wrong dataset
+DATASET="test/fixtures/final*.txt"
 
-echo "$ mpi162 t!" #TODO: this should be mpi162 non-t
-OMP_NUM_THREADS=2 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
-OMP_NUM_THREADS=2 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
-OMP_NUM_THREADS=2 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
+echo "$ mpi82"
+OMP_NUM_THREADS=8 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
+OMP_NUM_THREADS=8 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
+OMP_NUM_THREADS=8 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
 echo "$ ---"
 
 echo "$ mpiX2"
-mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
-mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
-mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
+OMP_NUM_THREADS=20 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
+OMP_NUM_THREADS=20 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}
+OMP_NUM_THREADS=20 mpirun --mca btl tcp,self -np $NSLOTS ./bin/pdpjes ${DATASET}

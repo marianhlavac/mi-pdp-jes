@@ -9,13 +9,7 @@
 DATASET="test/fixtures/final*.txt"
 
 echo "$ nompi8"
-OMP_NUM_THREADS=8 ./bin/pdpjes ${DATASET}
-OMP_NUM_THREADS=8 ./bin/pdpjes ${DATASET}
-OMP_NUM_THREADS=8 ./bin/pdpjes ${DATASET}
-echo "$ ---"
-
-echo "$ nompiX"
-./bin/pdpjes ${DATASET}
-./bin/pdpjes ${DATASET}
-./bin/pdpjes ${DATASET}
+OMP_NUM_THREADS=8 ./bin/pdpjes --nompi ${DATASET}
+OMP_NUM_THREADS=8 ./bin/pdpjes --nompi ${DATASET}
+OMP_NUM_THREADS=8 ./bin/pdpjes --nompi ${DATASET}
 echo "$ ---"

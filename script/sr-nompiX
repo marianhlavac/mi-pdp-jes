@@ -1,0 +1,15 @@
+#!/bin/sh
+
+#$ -S /bin/bash
+#$ -cwd
+#$ -e ./dist/
+#$ -o ./dist/
+#$ -pe ompi 1
+
+DATASET="test/fixtures/final*.txt"
+
+echo "$ nompiX"
+OMP_NUM_THREADS=20 ./bin/pdpjes --nompi ${DATASET}
+OMP_NUM_THREADS=20 ./bin/pdpjes --nompi ${DATASET}
+OMP_NUM_THREADS=20 ./bin/pdpjes --nompi ${DATASET}
+echo "$ ---"

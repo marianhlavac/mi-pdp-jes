@@ -9,7 +9,7 @@
 DATASET="test/fixtures/final*.txt"
 
 echo "$ nompi4"
-OMP_NUM_THREADS=4 ./bin/pdpjes ${DATASET}
-OMP_NUM_THREADS=4 ./bin/pdpjes ${DATASET}
-OMP_NUM_THREADS=4 ./bin/pdpjes ${DATASET}
+OMP_NUM_THREADS=4 ./bin/pdpjes --nompi ${DATASET}
+OMP_NUM_THREADS=4 ./bin/pdpjes --nompi ${DATASET}
+OMP_NUM_THREADS=4 ./bin/pdpjes --nompi ${DATASET}
 echo "$ ---"
